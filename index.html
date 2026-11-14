@@ -153,6 +153,26 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
   font-size:11px;font-weight:600;padding:3px 9px;border-radius:0 0 11px 0;
 }
 
+/* thẻ mẫu sản phẩm */
+.sp-nhom{position:relative;border:1px solid var(--vien);border-radius:14px;padding:12px;background:#fff}
+.sp-nhom:active{border-color:var(--hong);background:#FFFCFD}
+.sp-nhom .ten{font-family:var(--serif);font-weight:600;font-size:16.5px;line-height:1.3;padding-right:46px}
+.sp-nhom .bt{font-size:12px;color:var(--mo);margin-top:4px}
+.sp-nhom .gia{font-weight:600;font-size:14px;color:var(--luc);margin-top:9px}
+.sp-nhom .ton{position:absolute;right:10px;top:11px}
+.sp-nhom .dem-gio{margin-left:7px;vertical-align:middle}
+
+/* dòng biến thể trong tấm trượt */
+.bt-dong{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--vien)}
+.bt-dong:last-of-type{border-bottom:0}
+.bt-dong .than{flex:1;min-width:0}
+.bt-dong .ten{font-weight:600;font-size:15px}
+.bt-dong .phu{font-size:12.5px;color:var(--mo);margin-top:2px}
+.bt-dong .them{
+  flex:none;width:36px;height:36px;border-radius:12px;
+  background:var(--hong);color:#fff;font-size:20px;font-weight:600;line-height:1;
+}
+
 /* ---------- giỏ ---------- */
 .gio-dong{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--vien)}
 .gio-dong:last-child{border-bottom:0}
@@ -406,7 +426,7 @@ const UD = {
   token: localStorage.getItem('ea_token') || '',
   me: null,
   dm: [], kenh: [], httt: [], loaiCP: [],
-  gio: [], kho: [],
+  gio: [], kho: [], nhomSP: [],
   locKhoHienTai: 'tatca',
   locSPHienTai: 'tatca',
   anh: { c: null, g: null },
@@ -619,6 +639,58 @@ function locSP(ma) {
   [].forEach.call(document.querySelectorAll('#d-loc button'), b => b.classList.toggle('chon', b.dataset.sp === ma));
   veLuoiSP();
 }
+/* Gom các SKU về một mẫu: bỏ size rồi bỏ màu ở cuối tên hàng.
+   "Yên Đan navy M" -> "Yên Đan",  "La Lan tím L" -> "La Lan" */
+const MAU_QUEN = ['đen','trắng','be','nâu','navy','lam','xanh','lá','hồng','tím','đỏ',
+                  'kem','ghi','xám','vàng','cam','bạc','nude','rêu','mint','pastel'];
+function boDau(s) {
+  return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase();
+}
+const MAU_QUEN_KD = MAU_QUEN.map(boDau);
+function escRe(s) { return String(s == null ? '' : s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function tenMauSP(x) {
+  var t = String(x.tenHang || '').trim();
+  if (x.size) t = t.replace(new RegExp('\\s+' + escRe(x.size) + '$', 'i'), '');
+  const tuMau = String(x.mau || '').trim().split(/\s+/).filter(Boolean).map(boDau);
+  for (var lan = 0; lan < 2; lan++) {
+    const tu = t.split(/\s+/);
+    if (tu.length < 2) break;
+    const cuoi = boDau(tu[tu.length - 1]);
+    if (tuMau.indexOf(cuoi) < 0 && MAU_QUEN_KD.indexOf(cuoi) < 0) break;
+    tu.pop(); t = tu.join(' ');
+  }
+  return t.trim() || String(x.tenHang || '');
+}
+
+function gomNhomSP(ds) {
+  const g = {}; const thuTu = [];
+  ds.forEach(function (x) {
+    const k = tenMauSP(x);
+    if (!g[k]) { g[k] = { ten: k, bt: [], ton: 0, giaMin: Infinity, giaMax: 0 }; thuTu.push(k); }
+    const n = g[k];
+    n.bt.push(x);
+    n.ton += Number(x.ton) || 0;
+    n.giaMin = Math.min(n.giaMin, Number(x.giaBan) || 0);
+    n.giaMax = Math.max(n.giaMax, Number(x.giaBan) || 0);
+  });
+  return thuTu.map(function (k) {
+    const n = g[k];
+    const mau = [], size = [];
+    n.bt.forEach(function (x) {
+      if (x.mau && mau.indexOf(x.mau) < 0) mau.push(x.mau);
+      if (x.size && size.indexOf(x.size) < 0) size.push(x.size);
+    });
+    n.soMau = mau.length; n.soSize = size.length;
+    n.trongGio = n.bt.reduce(function (s, x) {
+      const it = UD.gio.filter(function (y) { return y.maHang === x.maHang; })[0];
+      return s + (it ? it.soLuong : 0);
+    }, 0);
+    return n;
+  });
+}
+
 function veLuoiSP() {
   const q = ($('d-tim').value || '').trim().toLowerCase();
   let ds = spBanDuoc();
@@ -627,17 +699,21 @@ function veLuoiSP() {
   else if (l.indexOf('nhom:') === 0) ds = ds.filter(x => x.nhom === l.slice(5));
   if (q) ds = ds.filter(x => (x.tenHang || '').toLowerCase().indexOf(q) > -1 ||
                              (x.maHang || '').toLowerCase().indexOf(q) > -1);
-  $('d-luoi').innerHTML = ds.length ? ds.map(x => {
-    const tronGio = UD.gio.filter(g => g.maHang === x.maHang)[0];
-    const lop = x.ton <= 0 ? 'n-do' : (x.tonToiThieu > 0 && x.ton <= x.tonToiThieu ? 'n-cam' : 'n-luc');
-    return '<div class="sp" onclick="moChiTietSP(\'' + thoat(x.maHang) + '\')">' +
-      (tronGio ? '<div class="dem-gio">' + tronGio.soLuong + ' trong đơn</div>' : '') +
-      '<span class="the-nhan ' + lop + ' ton">' + so(x.ton) + '</span>' +
-      '<div class="ten"' + (tronGio ? ' style="margin-top:14px"' : '') + '>' + thoat(x.tenHang) + '</div>' +
-      '<div class="bt">' + thoat([x.mau, x.size].filter(Boolean).join(' · ')) + '</div>' +
-      '<div class="gia">' + tien(x.giaBan) + '</div>' +
-      '<button class="them" onclick="event.stopPropagation();themGio(\'' + thoat(x.maHang) + '\')">+</button>' +
-      '</div>';
+
+  UD.nhomSP = gomNhomSP(ds);
+  $('d-luoi').innerHTML = UD.nhomSP.length ? UD.nhomSP.map(function (n, i) {
+    const lop = n.ton <= 0 ? 'n-do' : 'n-luc';
+    const gia = n.giaMin === n.giaMax ? tien(n.giaMin) : tien(n.giaMin) + ' – ' + tien(n.giaMax);
+    const bt = [];
+    if (n.soMau) bt.push(n.soMau + ' màu');
+    if (n.soSize) bt.push(n.soSize + ' size');
+    return '<div class="sp-nhom" onclick="moNhomSP(' + i + ')">' +
+      '<span class="the-nhan ' + lop + ' ton">' + so(n.ton) + '</span>' +
+      '<div class="ten">' + thoat(n.ten) + '</div>' +
+      '<div class="bt">' + thoat(bt.join(' · ')) + '</div>' +
+      '<div class="gia">' + gia +
+        (n.trongGio ? '<span class="the-nhan n-hong dem-gio">' + n.trongGio + ' trong đơn</span>' : '') +
+      '</div></div>';
   }).join('') : '<div class="trong" style="grid-column:1/-1">Không có sản phẩm nào khớp</div>';
   capNhatDemGio();
 }
@@ -652,25 +728,31 @@ function moTam(html) { $('tam').innerHTML = '<div class="vach"></div>' + html; $
 function dongTam(e) { if (!e || e.target.id === 'tam-nen') $('tam-nen').classList.add('an'); }
 function dongTamNgay() { $('tam-nen').classList.add('an'); }
 
-function moChiTietSP(ma) {
-  const x = UD.dm.filter(y => y.maHang === ma)[0];
-  if (!x) return;
-  const g = UD.gio.filter(y => y.maHang === ma)[0];
-  const lop = x.ton <= 0 ? 'n-do' : (x.tonToiThieu > 0 && x.ton <= x.tonToiThieu ? 'n-cam' : 'n-luc');
+/* Tấm trượt: chọn màu và size của một mẫu */
+function moNhomSP(i) {
+  const n = UD.nhomSP[i];
+  if (!n) return;
+  const bt = n.bt.slice().sort(function (a, b) {
+    const m = String(a.mau || '').localeCompare(String(b.mau || ''), 'vi');
+    return m !== 0 ? m : String(a.size || '').localeCompare(String(b.size || ''), 'vi');
+  });
+
   moTam(
-    '<h2 style="font-size:20px">' + thoat(x.tenHang) + '</h2>' +
-    '<div class="phu" style="color:var(--mo);font-size:13px;margin:4px 0 14px">' + thoat(x.maHang) + '</div>' +
-    '<div class="luoi">' +
-      o('Tồn kho', so(x.ton) + ' ' + thoat(x.dvt || ''), x.ton <= 0 ? '' : 'luc') +
-      o('Tồn tối thiểu', so(x.tonToiThieu)) +
-      o('Màu', thoat(x.mau || '—')) + o('Size', thoat(x.size || '—')) +
-      o('Giá bán', tien(x.giaBan), 'rong') +
-    '</div>' +
-    '<div style="margin:14px 0 4px"><span class="the-nhan ' + lop + '">' +
-      (x.ton <= 0 ? 'Hết hàng' : (x.tonToiThieu > 0 && x.ton <= x.tonToiThieu ? 'Sắp hết' : 'Còn hàng')) +
-    '</span>' + (g ? ' <span class="the-nhan n-hong">Đang có ' + g.soLuong + ' trong đơn</span>' : '') + '</div>' +
-    '<button class="nut" style="margin-top:14px" onclick="themGio(\'' + thoat(ma) + '\');dongTamNgay()">Thêm vào đơn</button>' +
-    '<button class="nut vien nho" style="margin-top:9px" onclick="dongTamNgay()">Đóng</button>'
+    '<h2 style="font-size:22px">' + thoat(n.ten) + '</h2>' +
+    '<div style="color:var(--mo);font-size:13px;margin:4px 0 12px">Chọn màu và size</div>' +
+    bt.map(function (x) {
+      const it = UD.gio.filter(function (y) { return y.maHang === x.maHang; })[0];
+      const lop = x.ton <= 0 ? 'n-do' : (x.tonToiThieu > 0 && x.ton <= x.tonToiThieu ? 'n-cam' : 'n-luc');
+      const tt = x.ton <= 0 ? 'hết hàng' : 'còn ' + so(x.ton) + ' ' + (x.dvt || '');
+      return '<div class="bt-dong"><div class="than">' +
+        '<div class="ten">' + thoat([x.mau, x.size].filter(Boolean).join('  ·  ') || x.tenHang) + '</div>' +
+        '<div class="phu">' + tien(x.giaBan) + ' · ' + thoat(tt) +
+          (it ? ' · <b style="color:var(--hong-dam)">' + it.soLuong + ' trong đơn</b>' : '') + '</div></div>' +
+        '<span class="the-nhan ' + lop + '">' + so(x.ton) + '</span>' +
+        '<button class="them" onclick="themGio(\'' + thoat(x.maHang) + '\');moNhomSP(' + i + ')">+</button>' +
+        '</div>';
+    }).join('') +
+    '<button class="nut" style="margin-top:16px" onclick="dongTamNgay()">Xong</button>'
   );
 }
 
