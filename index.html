@@ -13,7 +13,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"></noscript>
 <style>
 :root{
   /* bảng màu xanh hồng */
@@ -288,6 +289,12 @@ body.co-thanh-chon #thongbao{bottom:158px}
 .quet .khung{position:relative;width:78%;max-width:340px;height:150px;border:3px solid #fff;border-radius:18px;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
 .quet .chu{position:relative;color:#fff;margin-top:18px;font-size:14px;text-align:center;padding:0 24px}
 .quet button{position:absolute;bottom:calc(30px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#fff;color:var(--chu);padding:12px 26px;border-radius:13px;font-weight:600}
+
+/* ---------- tải ngầm: thanh mảnh trên cùng, không che màn hình ---------- */
+.thanh-tai{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0);height:3px;z-index:95;overflow:hidden;pointer-events:none}
+.thanh-tai::before{content:'';position:absolute;top:0;bottom:0;left:-40%;width:40%;border-radius:3px;background:var(--hong-nhat);animation:chay-tai 1.05s ease-in-out infinite}
+@keyframes chay-tai{to{left:100%}}
+.nut.dang{opacity:.6;pointer-events:none}
 </style>
 </head>
 <body>
@@ -374,12 +381,12 @@ body.co-thanh-chon #thongbao{bottom:158px}
           <div class="nhan">Khách thanh toán</div>
           <div class="so" id="d-tong">0 ₫</div>
         </div>
-        <button class="nut" onclick="chotDon()">Chốt đơn và trừ kho</button>
+        <button class="nut" id="d-chot" onclick="chotDon()">Chốt đơn và trừ kho</button>
       </div>
 
       <div class="the">
         <div class="the-tieude"><h2>Đơn hôm nay</h2>
-          <button class="the-nhan n-xam" onclick="taiDonHomNay()">Làm mới</button></div>
+          <button class="the-nhan n-xam" onclick="taiDonHomNay(true)">Làm mới</button></div>
         <div id="d-ds"><div class="trong">Đang tải…</div></div>
       </div>
     </section>
@@ -390,7 +397,7 @@ body.co-thanh-chon #thongbao{bottom:158px}
         <div class="the-tieude"><h2>Tình trạng vận đơn</h2>
           <div style="display:flex;gap:6px">
             <button class="the-nhan n-xam" id="v-nut-chon" onclick="batChonNhieu()">Chọn nhiều</button>
-            <button class="the-nhan n-xam" onclick="taiVanDon()">Làm mới</button>
+            <button class="the-nhan n-xam" onclick="taiVanDon(true)">Làm mới</button>
           </div>
         </div>
         <input type="text" id="v-tim" placeholder="Tìm tên, SĐT, mã đơn, mã vận đơn…" oninput="veVanDon()">
@@ -407,7 +414,7 @@ body.co-thanh-chon #thongbao{bottom:158px}
     <section id="tr-kho" class="an">
       <div class="the">
         <div class="the-tieude"><h2>Tồn kho</h2>
-          <button class="the-nhan n-xam" onclick="taiKho()">Làm mới</button></div>
+          <button class="the-nhan n-xam" onclick="taiKho(true)">Làm mới</button></div>
         <div class="loc">
           <button class="chon" data-loc="tatca" onclick="locKho('tatca')">Tất cả</button>
           <button data-loc="canhbao" onclick="locKho('canhbao')">Sắp hết</button>
@@ -443,7 +450,7 @@ body.co-thanh-chon #thongbao{bottom:158px}
       </div>
       <div class="the">
         <div class="the-tieude"><h2>Tháng này</h2>
-          <button class="the-nhan n-xam" onclick="taiChiPhi()">Làm mới</button></div>
+          <button class="the-nhan n-xam" onclick="taiChiPhi(true)">Làm mới</button></div>
         <div id="c-thang"><div class="trong">Đang tải…</div></div>
       </div>
     </section>
@@ -484,6 +491,18 @@ body.co-thanh-chon #thongbao{bottom:158px}
 </div>
 
 <div id="dang-tai" class="dang-tai an"><div class="quay"></div></div>
+<div id="thanh-tai" class="thanh-tai an"></div>
+
+<!-- ============ KHÔNG KẾT NỐI ĐƯỢC (lần đầu, chưa có dữ liệu lưu) ============ -->
+<div id="man-loi" class="man-giua an">
+  <div class="hieu">
+    <div class="dau-hieu">ÊA</div>
+    <h1>Chưa kết nối được</h1>
+    <p id="loi-chu">Kiểm tra mạng rồi thử lại</p>
+  </div>
+  <button class="nut" onclick="location.reload()">Thử lại</button>
+  <button class="nut vien nho" style="margin-top:9px" onclick="$('man-loi').classList.add('an');manLogin()">Đăng nhập lại</button>
+</div>
 
 <script>
 /* =======================================================================
@@ -491,9 +510,14 @@ body.co-thanh-chon #thongbao{bottom:158px}
    Gọi Web App Apps Script bằng POST text/plain để tránh preflight CORS.
    ======================================================================= */
 
+const APP_PHIEN_BAN = '1.2';
+
 const UD = {
   api: localStorage.getItem('ea_api') || '',
   token: localStorage.getItem('ea_token') || '',
+  goc: '',            // gốc mã chống trùng, đổi sau mỗi lần ghi thành công
+  vdTai: '',          // số ngày của danh sách vận đơn đang có trong máy
+  khongNhieu: false,  // Apps Script chưa lên bản 1.2 → gọi song song thay vì gộp
   me: null,
   dm: [], kenh: [], httt: [], loaiCP: [],
   gio: [], kho: [], nhomSP: [],
@@ -522,30 +546,111 @@ function hbo(chu, loai) {
   clearTimeout(hboTimer);
   hboTimer = setTimeout(() => { t.style.display = 'none'; }, loai === 'loi' ? 5200 : 2400);
 }
-const tai = b => $('dang-tai').classList.toggle('an', !b);
+let soPhu = 0;
+const tai = b => { soPhu = Math.max(0, soPhu + (b ? 1 : -1)); $('dang-tai').classList.toggle('an', soPhu === 0); };
+let soNen = 0;
+const taiNen = b => { soNen = Math.max(0, soNen + (b ? 1 : -1)); $('thanh-tai').classList.toggle('an', soNen === 0); };
 
-/* ---------------- gọi API ---------------- */
-async function api(action, data) {
-  if (!UD.api) { manCaiDat(); throw new Error('Chưa cấu hình địa chỉ hệ thống'); }
-  tai(true);
+const homNay = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const thangNay = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1); };
+
+/* ---------------- bộ nhớ trên máy ----------------
+   Mở app / chuyển tab: hiện ngay số liệu lần trước, đồng thời tải số mới chạy ngầm.
+   Số liệu còn mới (dưới HAN_MOI) thì không tải lại. Đăng xuất là xoá sạch. */
+const HAN_MOI = { khoiTao: 300000, home: 30000, don: 20000, vd: 20000, kho: 30000, chiphi: 60000, cong: 30000 };
+const BN = {
+  tien: 'ea_c_',
+  k(k) { return this.tien + (localStorage.getItem('ea_ma') || '_') + '_' + k; },
+  lay(k, pv) {
+    try {
+      const v = JSON.parse(localStorage.getItem(this.k(k)) || 'null');
+      return v && (!pv || v.p === pv) ? v : null;
+    } catch (e) { return null; }
+  },
+  luu(k, d, pv) { try { localStorage.setItem(this.k(k), JSON.stringify({ t: Date.now(), p: pv || '', d: d })); } catch (e) {} },
+  cu(k) { const v = this.lay(k); if (v) { v.t = 0; try { localStorage.setItem(this.k(k), JSON.stringify(v)); } catch (e) {} } },
+  canTai(k, pv) { const v = this.lay(k, pv); return !v || Date.now() - v.t > (HAN_MOI[k] || 30000); },
+  xoaHet() { try { Object.keys(localStorage).filter(x => x.indexOf(this.tien) === 0).forEach(x => localStorage.removeItem(x)); } catch (e) {} }
+};
+
+/* ---------------- chống trùng ----------------
+   Mỗi thao tác ghi kèm 1 mã. Mạng chập chờn mà bấm lại đúng thao tác đó thì hệ thống
+   trả kết quả lần trước, không tạo đơn / phiếu thứ hai. Ghi xong thì đổi gốc mã. */
+function taoIdYC() {
+  try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+}
+function bam(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+function idYC(loai, duLieu) { if (!UD.goc) UD.goc = taoIdYC(); return UD.goc + '.' + loai + '.' + bam(JSON.stringify(duLieu || {})); }
+
+/* ---------------- gọi API ----------------
+   tuy.ghi : thao tác ghi → màn chờ (sau 0,15 giây), kèm mã chống trùng tuy.idYC
+   tuy.phu : thao tác đọc nhưng cần màn chờ (lần đầu mở app, chưa có gì để hiện)
+   còn lại  : tải ngầm, chỉ hiện thanh mảnh trên cùng
+   Cùng 1 thao tác đọc (hoặc cùng mã chống trùng) đang chạy thì dùng chung, không gửi lần 2. */
+const DANG_GOI = {};
+function api(action, data, tuy) {
+  tuy = tuy || {};
+  if (!UD.api) { manCaiDat(); return Promise.reject(new Error('Chưa cấu hình địa chỉ hệ thống')); }
+  const khoa = tuy.ghi ? (tuy.idYC ? 'g:' + tuy.idYC : '') : 'd:' + action + '|' + JSON.stringify(data || {});
+  if (khoa && DANG_GOI[khoa]) return DANG_GOI[khoa];
+  const p = goiMang_(action, data, tuy);
+  if (khoa) { DANG_GOI[khoa] = p; p.then(() => { delete DANG_GOI[khoa]; }, () => { delete DANG_GOI[khoa]; }); }
+  return p;
+}
+async function goiMang_(action, data, tuy) {
+  const phu = tuy.ghi || tuy.phu;
+  let henPhu = null, daPhu = false;
+  if (phu) henPhu = setTimeout(() => { daPhu = true; tai(true); }, tuy.phu ? 0 : 150);
+  else taiNen(true);
+  const ctl = window.AbortController ? new AbortController() : null;
+  const henHuy = ctl ? setTimeout(() => ctl.abort(), tuy.choToiDa || (tuy.ghi ? 60000 : 40000)) : null;
   try {
+    const goi = { action: action, token: UD.token, data: data || {} };
+    if (tuy.idYC) goi.idYC = tuy.idYC;
     const res = await fetch(UD.api, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, token: UD.token, data: data || {} }),
-      redirect: 'follow'
+      body: JSON.stringify(goi),
+      redirect: 'follow',
+      signal: ctl ? ctl.signal : undefined
     });
     const chu = await res.text();
     let j;
     try { j = JSON.parse(chu); }
     catch (e) { throw new Error('Hệ thống trả về dữ liệu lạ. Kiểm tra lại địa chỉ Web App.'); }
     if (j.hetPhien) { dangXuat(true); throw new Error('Phiên đã hết hạn, đăng nhập lại.'); }
-    if (!j.ok) throw new Error(j.loi || 'Lỗi không xác định');
+    if (!j.ok) { const loi = new Error(j.loi || 'Lỗi không xác định'); loi.kq = j; throw loi; }
+    if (tuy.ghi) UD.goc = taoIdYC();
     return j;
   } catch (e) {
-    if (e instanceof TypeError) throw new Error('Không kết nối được. Kiểm tra mạng và địa chỉ Web App.');
+    if (e && (e.name === 'AbortError' || e instanceof TypeError)) {
+      const loi = new Error(e.name === 'AbortError' ? 'Mạng chậm, chưa nhận được phản hồi.' : 'Không kết nối được, kiểm tra mạng.');
+      loi.mang = true;
+      throw loi;
+    }
     throw e;
-  } finally { tai(false); }
+  } finally {
+    if (henHuy) clearTimeout(henHuy);
+    if (phu) { clearTimeout(henPhu); if (daPhu) tai(false); } else taiNen(false);
+  }
+}
+
+/** Gộp nhiều thao tác đọc vào 1 lần gọi. Trả mảng kết quả đúng thứ tự (từng cái có ok riêng). */
+async function goiNhieu(ds, tuy) {
+  if (ds.length === 1) {
+    try { return [await api(ds[0].action, ds[0].data, tuy)]; }
+    catch (e) { if (e.mang || !UD.token) throw e; return [{ ok: false, loi: e.message }]; }
+  }
+  if (!UD.khongNhieu) {
+    try { return (await api('nhieu', { ds: ds }, tuy)).kq; }
+    catch (e) { if (!/thao tác: nhieu/.test(e.message)) throw e; UD.khongNhieu = true; }
+  }
+  // Apps Script chưa cập nhật bản 1.2: gọi song song từng cái
+  return Promise.all(ds.map(x => api(x.action, x.data, tuy).catch(e => {
+    if (e.mang) throw e;
+    return { ok: false, loi: e.message };
+  })));
 }
 
 /* ---------------- màn hình ---------------- */
@@ -566,28 +671,72 @@ async function dangNhap() {
   const pin = $('dn-pin').value.trim();
   if (!ma || !pin) { hbo('Nhập mã nhân viên và PIN', 'loi'); return; }
   try {
-    const j = await api('login', { maNV: ma, pin: pin });
+    const j = await api('login', { maNV: ma, pin: pin }, { phu: true });
+    if (localStorage.getItem('ea_ma') !== ma) BN.xoaHet();
     UD.token = j.token; UD.me = j.nhanVien;
     localStorage.setItem('ea_token', j.token);
     localStorage.setItem('ea_ma', ma);
     $('dn-pin').value = '';
-    await khoiTao();
+    const c = BN.lay('khoiTao');
+    if (c) { apDungKhoiTao(c.d); vaoApp(false); }
+    await khoiTao({ nen: !!c, khongHome: !!c });
   } catch (e) { hbo(e.message, 'loi'); }
 }
 function dangXuat(tuDong) {
-  UD.token = ''; UD.me = null; UD.gio = [];
+  UD.token = ''; UD.me = null; UD.gio = []; UD.vd = []; UD.kho = []; UD.vdTai = '';
   localStorage.removeItem('ea_token');
+  BN.xoaHet();
+  $('man-loi').classList.add('an');
   manLogin();
   if (!tuDong) hbo('Đã đăng xuất');
 }
 
-async function khoiTao() {
-  const j = await api('khoiTao');
-  UD.me = j.nhanVien;
+function apDungKhoiTao(j) {
+  UD.me = j.nhanVien || UD.me;
   UD.dm = j.danhMuc || [];
   UD.kenh = j.kenh || []; UD.httt = j.hinhThucTT || []; UD.loaiCP = j.loaiChiPhi || [];
+}
+function vaoApp(daVao) {
   manApp(); dungNav(); nhoiSelect(); dungLocSP();
-  moTrang(UD.trang);
+  if (daVao) veLaiTrang(); else moTrang(UD.trang);
+}
+
+/* Tải gói khởi tạo (+ phần Tổng quan nếu đang ở đó) trong 1 lần gọi.
+   tuy.nen = true: đã hiện dữ liệu lưu trong máy, chỉ cập nhật ngầm. */
+async function khoiTao(tuy) {
+  tuy = tuy || {};
+  const daVao = !$('man-app').classList.contains('an');
+  const phan = !tuy.khongHome && UD.trang === 'home' && (!daVao || BN.canTai('home', homNay())) ? phanHome() : [];
+  const kq = await goiNhieu([{ action: 'khoiTao' }].concat(phan), { phu: !tuy.nen });
+  const kt = kq[0];
+  if (!kt || !kt.ok) throw new Error((kt && kt.loi) || 'Không tải được dữ liệu');
+  apDungKhoiTao(kt);
+  BN.luu('khoiTao', kt);
+  if (phan.length) luuHome(phan, kq.slice(1));
+  vaoApp(daVao);
+}
+
+/* Vẽ lại trang đang mở bằng dữ liệu vừa tải (không gọi thêm) */
+function veLaiTrang() {
+  const id = UD.trang;
+  if (id === 'home') veHome();
+  if (id === 'don') veLuoiSP();                     // không vẽ lại giỏ để khỏi mất ô đang gõ
+  if (id === 'kho' && !BN.lay('kho')) { UD.kho = khoTuDanhMuc(); veKho(); }
+}
+
+/* Cập nhật danh mục + tồn mới (từ kết quả chốt đơn, nhập kho, kiểm kê, huỷ đơn) */
+function capNhatDanhMuc(dm) {
+  UD.dm = dm || [];
+  const c = BN.lay('khoiTao');
+  if (c) { c.d.danhMuc = UD.dm; BN.luu('khoiTao', c.d); }
+  if (UD.kho.length) {
+    const ton = {};
+    UD.dm.forEach(x => { ton[x.maHang] = x.ton; });
+    UD.kho.forEach(x => { if (ton.hasOwnProperty(x.maHang)) x.ton = ton[x.maHang]; });
+    BN.luu('kho', UD.kho);
+  }
+  if (UD.trang === 'kho') veKho();
+  if (UD.trang === 'home') veHomeKho();
 }
 /* quyen('DONHANG|VANDON') = có ít nhất 1 trong các quyền */
 const quyen = q => UD.me && (UD.me.vaiTro === 'Admin' ||
@@ -614,7 +763,7 @@ const TRANG = [
 function dungNav() {
   $('h-ten').textContent = (UD.me.hoTen || UD.me.maNV).split(' ').slice(-1)[0];
   $('thanh-nav').innerHTML = TRANG.filter(t => !t.quyen || quyen(t.quyen))
-    .map(t => '<button data-tr="' + t.id + '" onclick="moTrang(\'' + t.id + '\')">' +
+    .map(t => '<button data-tr="' + t.id + '"' + (t.id === UD.trang ? ' class="chon"' : '') + ' onclick="moTrang(\'' + t.id + '\')">' +
       '<svg viewBox="0 0 24 24" fill="currentColor">' + BIEU_TUONG[t.id] + '</svg>' + t.ten + '</button>').join('');
 }
 function moTrang(id) {
@@ -635,10 +784,11 @@ function moTrang(id) {
 }
 function nhoiSelect() {
   const opt = ds => ds.map(x => '<option>' + thoat(x) + '</option>').join('');
-  $('d-kenh').innerHTML = opt(UD.kenh);
-  $('d-tt').innerHTML = opt(UD.httt);
-  $('c-loai').innerHTML = opt(UD.loaiCP);
-  $('c-tt').innerHTML = opt(UD.httt);
+  [['d-kenh', UD.kenh], ['d-tt', UD.httt], ['c-loai', UD.loaiCP], ['c-tt', UD.httt]].forEach(([id, ds]) => {
+    const el = $(id); const cu = el.value;          // giữ lựa chọn đang chọn khi cập nhật ngầm
+    el.innerHTML = opt(ds);
+    if (cu && ds.indexOf(cu) > -1) el.value = cu;
+  });
 }
 
 /* ---------------- tổng quan ---------------- */
@@ -646,54 +796,81 @@ function o(nhan, giatri, lop) {
   return '<div class="o-so ' + (lop || '') + '"><div class="nhan">' + thoat(nhan) +
          '</div><div class="so">' + thoat(giatri) + '</div></div>';
 }
-async function taiHome() {
+/* Phần dữ liệu của Tổng quan. Cảnh báo tồn tính ngay trên máy từ danh mục (đã có tồn). */
+function phanHome() {
+  const ds = [];
+  if (!UD.me || quyen('CHAMCONG')) ds.push({ action: 'trangThaiCong' });
+  if (!UD.me || quyen('BAOCAO')) ds.push({ action: 'baoCaoNgay' });
+  return ds;
+}
+function luuHome(ds, kq) {
+  const c = BN.lay('home', homNay());
+  const d = (c && c.d) || {};
+  ds.forEach((x, i) => { d[x.action] = kq[i]; });
+  BN.luu('home', d, homNay());
+}
+function veHome() {
   $('h-nhan').textContent = 'Xin chào ' + (UD.me.hoTen || '');
   $('home-cong').classList.toggle('an', !quyen('CHAMCONG'));
   $('home-ngay').classList.toggle('an', !quyen('BAOCAO'));
   $('home-kho').classList.toggle('an', !quyen('KHO'));
-
-  if (quyen('CHAMCONG')) {
-    try {
-      const j = await api('trangThaiCong');
-      $('home-cong').innerHTML = '<div class="the-tieude"><h2>Ca làm việc</h2></div>' +
-        (j.dangTrongCa
-          ? '<div class="dong"><div class="than"><div class="ten">Đang trong ca</div>' +
-            '<div class="phu">Vào lúc ' + thoat(j.ca.gioVao) + ' ngày ' + thoat(j.ca.ngay) + '</div></div>' +
-            '<span class="the-nhan n-luc">Mở</span></div>'
-          : '<div class="trong" style="padding:14px">Chưa check-in hôm nay</div>') +
-        '<button class="nut phu nho" style="margin-top:8px" onclick="moTrang(\'cong\')">Mở chấm công</button>';
-    } catch (e) { $('home-cong').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
-  }
-  if (quyen('BAOCAO')) {
-    try {
-      const j = await api('baoCaoNgay');
-      $('home-ngay').innerHTML = '<div class="the-tieude"><h2>Hôm nay ' + thoat(j.ngay) + '</h2></div>' +
-        '<div class="luoi">' +
-          o('Số đơn', so(j.soDon) + (j.soDonHuy ? ' (huỷ ' + j.soDonHuy + ')' : '')) +
-          o('Sản phẩm', so(j.tongSL)) +
-          o('Doanh thu', tien(j.doanhThu), 'rong luc') +
-          o('Chi phí', tien(j.chiPhi)) + o('Chênh lệch', tien(j.chenhLech)) +
-        '</div><button class="nut phu nho" style="margin-top:11px" onclick="guiBaoCao()">Gửi báo cáo ngay</button>';
-    } catch (e) { $('home-ngay').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
-  }
-  if (quyen('KHO')) {
-    try {
-      const j = await api('canhBaoTon');
-      const ds = j.danhSach || [];
-      $('home-kho').innerHTML = '<div class="the-tieude"><h2>Cảnh báo tồn</h2>' +
-        '<span class="the-nhan ' + (ds.length ? 'n-cam' : 'n-luc') + '">' + ds.length + ' mã</span></div>' +
-        (ds.length ? ds.slice(0, 5).map(x =>
-            '<div class="dong"><div class="than"><div class="ten">' + thoat(x.tenHang) + '</div>' +
-            '<div class="phu">' + thoat(x.maHang) + '</div></div>' +
-            '<div class="phai" style="color:' + (x.amKho ? 'var(--loi)' : 'var(--canh)') + '">' +
-            so(x.ton) + ' / ' + so(x.tonToiThieu) + '</div></div>').join('') +
-          (ds.length > 5 ? '<div class="trong" style="padding:10px">và ' + (ds.length - 5) + ' mã khác</div>' : '')
-        : '<div class="trong" style="padding:14px">Mọi mặt hàng đều trên mức tối thiểu</div>');
-    } catch (e) { $('home-kho').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
+  const c = BN.lay('home', homNay());
+  const d = (c && c.d) || {};
+  veHomeCong(d.trangThaiCong); veHomeNgay(d.baoCaoNgay); veHomeKho();
+}
+async function taiHome(epMoi) {
+  veHome();
+  if (!epMoi && !BN.canTai('home', homNay())) return;
+  const ds = phanHome();
+  if (!ds.length) return;
+  try { luuHome(ds, await goiNhieu(ds)); if (UD.trang === 'home') veHome(); }
+  catch (e) {
+    if (BN.lay('home', homNay())) { if (epMoi) hbo(e.message, 'loi'); return; }
+    veHomeCong({ ok: false, loi: e.message }); veHomeNgay({ ok: false, loi: e.message });
   }
 }
+const dangTaiThe = (tieuDe) => '<div class="the-tieude"><h2>' + tieuDe + '</h2></div><div class="trong" style="padding:14px">Đang tải…</div>';
+function veHomeCong(j) {
+  if (!quyen('CHAMCONG')) return;
+  if (!j) { $('home-cong').innerHTML = dangTaiThe('Ca làm việc'); return; }
+  if (!j.ok) { $('home-cong').innerHTML = '<div class="trong">' + thoat(j.loi) + '</div>'; return; }
+  $('home-cong').innerHTML = '<div class="the-tieude"><h2>Ca làm việc</h2></div>' +
+    (j.dangTrongCa
+      ? '<div class="dong"><div class="than"><div class="ten">Đang trong ca</div>' +
+        '<div class="phu">Vào lúc ' + thoat(j.ca.gioVao) + ' ngày ' + thoat(j.ca.ngay) + '</div></div>' +
+        '<span class="the-nhan n-luc">Mở</span></div>'
+      : '<div class="trong" style="padding:14px">Chưa check-in hôm nay</div>') +
+    '<button class="nut phu nho" style="margin-top:8px" onclick="moTrang(\'cong\')">Mở chấm công</button>';
+}
+function veHomeNgay(j) {
+  if (!quyen('BAOCAO')) return;
+  if (!j) { $('home-ngay').innerHTML = dangTaiThe('Hôm nay'); return; }
+  if (!j.ok) { $('home-ngay').innerHTML = '<div class="trong">' + thoat(j.loi) + '</div>'; return; }
+  $('home-ngay').innerHTML = '<div class="the-tieude"><h2>Hôm nay ' + thoat(j.ngay) + '</h2></div>' +
+    '<div class="luoi">' +
+      o('Số đơn', so(j.soDon) + (j.soDonHuy ? ' (huỷ ' + j.soDonHuy + ')' : '')) +
+      o('Sản phẩm', so(j.tongSL)) +
+      o('Doanh thu', tien(j.doanhThu), 'rong luc') +
+      o('Chi phí', tien(j.chiPhi)) + o('Chênh lệch', tien(j.chenhLech)) +
+    '</div><button class="nut phu nho" style="margin-top:11px" onclick="guiBaoCao()">Gửi báo cáo ngay</button>';
+}
+function veHomeKho() {
+  if (!quyen('KHO')) return;
+  const ds = UD.dm.filter(x => x.tonToiThieu > 0 && x.ton <= x.tonToiThieu)
+    .map(x => Object.assign({ amKho: x.ton < 0 }, x))
+    .sort((a, b) => (a.ton - a.tonToiThieu) - (b.ton - b.tonToiThieu));
+  $('home-kho').innerHTML = '<div class="the-tieude"><h2>Cảnh báo tồn</h2>' +
+    '<span class="the-nhan ' + (ds.length ? 'n-cam' : 'n-luc') + '">' + ds.length + ' mã</span></div>' +
+    (ds.length ? ds.slice(0, 5).map(x =>
+        '<div class="dong"><div class="than"><div class="ten">' + thoat(x.tenHang) + '</div>' +
+        '<div class="phu">' + thoat(x.maHang) + '</div></div>' +
+        '<div class="phai" style="color:' + (x.amKho ? 'var(--loi)' : 'var(--canh)') + '">' +
+        so(x.ton) + ' / ' + so(x.tonToiThieu) + '</div></div>').join('') +
+      (ds.length > 5 ? '<div class="trong" style="padding:10px">và ' + (ds.length - 5) + ' mã khác</div>' : '')
+    : '<div class="trong" style="padding:14px">Mọi mặt hàng đều trên mức tối thiểu</div>');
+}
 async function guiBaoCao() {
-  try { const j = await api('guiBaoCao'); hbo('Telegram: ' + j.telegram + ' · Email: ' + j.email, 'ok'); }
+  try { const j = await api('guiBaoCao', {}, { ghi: true, idYC: idYC('guiBaoCao', { ngay: homNay() }) }); hbo('Telegram: ' + j.telegram + ' · Email: ' + j.email, 'ok'); }
   catch (e) { hbo(e.message, 'loi'); }
 }
 
@@ -885,49 +1062,71 @@ function veGio() {
 
 async function chotDon() {
   if (!UD.gio.length) { hbo('Chưa chọn sản phẩm', 'loi'); return; }
+  const nut = $('d-chot');
+  if (nut.classList.contains('dang')) return;
+  const don = {
+    kenh: $('d-kenh').value,
+    khachHang: $('d-khach').value.trim(),
+    soDienThoai: $('d-sdt').value.trim(),
+    diaChi: $('d-diachi').value.trim(),
+    hinhThucTT: $('d-tt').value,
+    giamGia: Number($('d-giam').value) || 0,
+    phiShip: Number($('d-ship').value) || 0,
+    items: UD.gio.map(x => ({ maHang: x.maHang, soLuong: x.soLuong, donGia: x.donGia }))
+  };
+  nut.classList.add('dang'); nut.textContent = 'Đang chốt đơn…';
   try {
-    const j = await api('taoDon', { don: {
-      kenh: $('d-kenh').value,
-      khachHang: $('d-khach').value.trim(),
-      soDienThoai: $('d-sdt').value.trim(),
-      diaChi: $('d-diachi').value.trim(),
-      hinhThucTT: $('d-tt').value,
-      giamGia: Number($('d-giam').value) || 0,
-      phiShip: Number($('d-ship').value) || 0,
-      items: UD.gio.map(x => ({ maHang: x.maHang, soLuong: x.soLuong, donGia: x.donGia }))
-    }});
-    hbo('Đã chốt ' + j.maDon + ' · ' + tien(j.thanhToan), 'ok');
+    const j = await api('taoDon', { don: don }, { ghi: true, idYC: idYC('taoDon', don) });
+    hbo((j.trung ? 'Đơn này đã chốt rồi: ' : 'Đã chốt ') + j.maDon + ' · ' + tien(j.thanhToan), 'ok');
     if (j.canhBao && j.canhBao.length) setTimeout(() => hbo('Có ' + j.canhBao.length + ' mã chạm ngưỡng tồn', 'loi'), 2600);
     UD.gio = [];
     $('d-khach').value = ''; $('d-sdt').value = ''; $('d-diachi').value = '';
     $('d-giam').value = 0; $('d-ship').value = 0;
-    await lamMoiDanhMuc();
-    veGio(); veLuoiSP(); taiDonHomNay();
-  } catch (e) { hbo(e.message, 'loi'); }
+    if (j.danhMuc) capNhatDanhMuc(j.danhMuc); else lamMoiDanhMuc();
+    veGio(); veLuoiSP();
+    if (j.homNay) { BN.luu('don', j.homNay, homNay()); veDonHomNay(j.homNay); } else taiDonHomNay(true);
+    BN.cu('home'); BN.cu('vd'); BN.cu('kho');
+  } catch (e) {
+    if (e.mang) {
+      hbo(e.message + ' Xem mục Đơn hôm nay trước khi bấm chốt lại — bấm lại đúng đơn này cũng không bị trùng.', 'loi');
+      taiDonHomNay(true);
+    } else hbo('Chưa chốt được: ' + e.message, 'loi');
+  } finally { nut.classList.remove('dang'); nut.textContent = 'Chốt đơn và trừ kho'; }
 }
 async function lamMoiDanhMuc() {
-  try { const j = await api('danhMuc'); UD.dm = j.danhMuc || []; } catch (e) {}
+  try { const j = await api('danhMuc'); capNhatDanhMuc(j.danhMuc); veLuoiSP(); } catch (e) {}
 }
 
-async function taiDonHomNay() {
-  try {
-    const j = await api('donHomNay');
-    const ds = j.danhSach || [];
-    $('d-ds').innerHTML = '<div class="luoi" style="margin-bottom:12px">' +
-        o('Số đơn', so(j.soDon)) + o('Doanh thu', tien(j.doanhThu)) + '</div>' +
-      (ds.length ? ds.map(x =>
-        '<div class="dong"><div class="than"><div class="ten">' + thoat(x.khachHang || 'Khách lẻ') + '</div>' +
-        '<div class="phu">' + thoat(x.gio) + ' · ' + thoat(x.kenh) + ' · ' + thoat(x.maDon) + '</div></div>' +
-        '<div class="phai">' + tien(x.thanhToan) +
-        '<div class="phu" style="font-weight:400">' + thoat(x.trangThai) + '</div></div></div>'
-      ).join('') : '<div class="trong">Chưa có đơn nào hôm nay</div>');
-  } catch (e) { $('d-ds').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
+async function taiDonHomNay(epMoi) {
+  const c = BN.lay('don', homNay());
+  if (c) veDonHomNay(c.d);
+  if (!epMoi && c && !BN.canTai('don', homNay())) return;
+  try { const j = await api('donHomNay'); BN.luu('don', j, homNay()); veDonHomNay(j); }
+  catch (e) { if (!c) $('d-ds').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; else if (epMoi) hbo(e.message, 'loi'); }
+}
+function veDonHomNay(j) {
+  const ds = j.danhSach || [];
+  $('d-ds').innerHTML = '<div class="luoi" style="margin-bottom:12px">' +
+      o('Số đơn', so(j.soDon)) + o('Doanh thu', tien(j.doanhThu)) + '</div>' +
+    (ds.length ? ds.map(x =>
+      '<div class="dong"><div class="than"><div class="ten">' + thoat(x.khachHang || 'Khách lẻ') + '</div>' +
+      '<div class="phu">' + thoat(x.gio) + ' · ' + thoat(x.kenh) + ' · ' + thoat(x.maDon) + '</div></div>' +
+      '<div class="phai">' + tien(x.thanhToan) +
+      '<div class="phu" style="font-weight:400">' + thoat(x.trangThai) + '</div></div></div>'
+    ).join('') : '<div class="trong">Chưa có đơn nào hôm nay</div>');
 }
 
 /* ---------------- kho ---------------- */
-async function taiKho() {
-  try { const j = await api('tonKho'); UD.kho = j.danhSach || []; veKho(); }
-  catch (e) { $('k-ds').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
+function khoTuDanhMuc() {
+  return UD.dm.map(x => ({ maHang: x.maHang, tenHang: x.tenHang, loaiHang: x.loaiHang, ton: x.ton, tonToiThieu: x.tonToiThieu }));
+}
+async function taiKho(epMoi) {
+  const c = BN.lay('kho');
+  if (c) UD.kho = c.d; else if (!UD.kho.length) UD.kho = khoTuDanhMuc();
+  veKho();
+  if (!epMoi && c && !BN.canTai('kho')) return;
+  try { const j = await api('tonKho'); UD.kho = j.danhSach || []; BN.luu('kho', UD.kho); veKho(); }
+  catch (e) { if (!UD.kho.length) $('k-ds').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; else if (epMoi) hbo(e.message, 'loi'); }
 }
 function locKho(l) {
   UD.locKhoHienTai = l;
@@ -1018,9 +1217,12 @@ async function guiNhapKho() {
   const items = dongTamDS.filter(x => Number(x.gt) > 0).map(x => ({ maHang: x.maHang, soLuong: Number(x.gt) }));
   if (!items.length) { hbo('Chưa nhập số lượng nào', 'loi'); return; }
   try {
-    const j = await api('nhapKho', { items: items });
-    hbo('Đã nhập ' + j.soDong + ' mã', 'ok');
-    dongPhu(); await lamMoiDanhMuc(); taiKho(); veLuoiSP();
+    const d = { items: items };
+    const j = await api('nhapKho', d, { ghi: true, idYC: idYC('nhapKho', d) });
+    hbo((j.trung ? 'Phiếu này đã ghi rồi: ' : 'Đã nhập ') + j.soDong + ' mã', 'ok');
+    dongPhu();
+    if (j.danhMuc) capNhatDanhMuc(j.danhMuc); else { lamMoiDanhMuc(); taiKho(true); }
+    veLuoiSP(); BN.cu('home');
   } catch (e) { hbo(e.message, 'loi'); }
 }
 
@@ -1037,9 +1239,12 @@ async function guiKiemKe() {
     .map(x => ({ maHang: x.maHang, tonThucTe: Number(x.gt), lyDo: x.lyDo }));
   if (!items.length) { hbo('Chưa nhập tồn thực tế', 'loi'); return; }
   try {
-    const j = await api('kiemKe', { ca: $('p-ca').value, items: items });
-    hbo('Đã kiểm ' + j.soDong + ' mã, lệch ' + j.soLech + ' mã', 'ok');
-    dongPhu(); await lamMoiDanhMuc(); taiKho(); veLuoiSP();
+    const d = { ca: $('p-ca').value, items: items };
+    const j = await api('kiemKe', d, { ghi: true, idYC: idYC('kiemKe', d) });
+    hbo((j.trung ? 'Phiếu này đã ghi rồi: ' : 'Đã kiểm ') + j.soDong + ' mã, lệch ' + j.soLech + ' mã', 'ok');
+    dongPhu();
+    if (j.danhMuc) capNhatDanhMuc(j.danhMuc); else { lamMoiDanhMuc(); taiKho(true); }
+    veLuoiSP(); BN.cu('home');
   } catch (e) { hbo(e.message, 'loi'); }
 }
 
@@ -1089,62 +1294,81 @@ async function guiChiPhi() {
   const t = Number($('c-tien').value) || 0;
   if (t <= 0) { hbo('Nhập số tiền', 'loi'); return; }
   try {
-    await api('themChiPhi', { chiPhi: {
+    const d = { chiPhi: {
       loaiChiPhi: $('c-loai').value, noiDung: $('c-noidung').value.trim(),
       soTien: t, hinhThucTT: $('c-tt').value, anh: UD.anh.c
-    }});
-    hbo('Đã lưu chi phí ' + tien(t), 'ok');
+    }};
+    const j = await api('themChiPhi', d, { ghi: true, idYC: idYC('themChiPhi', d) });
+    hbo((j.trung ? 'Khoản này đã lưu rồi: ' : 'Đã lưu chi phí ') + tien(t), 'ok');
     $('c-noidung').value = ''; $('c-tien').value = '';
     xoaAnh('c', 'Chạm để chụp hoặc chọn ảnh');
-    taiChiPhi();
+    BN.cu('home');
+    taiChiPhi(true);
   } catch (e) { hbo(e.message, 'loi'); }
 }
-async function taiChiPhi() {
-  try {
-    const j = await api('chiPhiThang');
-    const loai = j.theoLoai || {};
-    const khoa = Object.keys(loai).sort((a, b) => loai[b] - loai[a]);
-    $('c-thang').innerHTML = '<div class="luoi" style="margin-bottom:12px">' +
-        o('Tổng chi', tien(j.tong)) + o('Doanh thu', tien(j.doanhThu)) +
-        o('Chênh lệch', tien(j.chenhLech), 'rong luc') + '</div>' +
-      '<div class="dong"><div class="than"><div class="ten">Chi phí trên doanh thu</div></div>' +
-      '<div class="phai">' + (j.tyLeChiPhi || 0) + '%</div></div>' +
-      (khoa.length ? khoa.map(k => '<div class="dong"><div class="than"><div class="ten">' + thoat(k) +
-        '</div></div><div class="phai">' + tien(loai[k]) + '</div></div>').join('')
-        : '<div class="trong">Tháng này chưa có khoản chi nào</div>');
-  } catch (e) { $('c-thang').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
+async function taiChiPhi(epMoi) {
+  const pv = thangNay(), c = BN.lay('chiphi', pv);
+  if (c) veChiPhi(c.d);
+  if (!epMoi && c && !BN.canTai('chiphi', pv)) return;
+  try { const j = await api('chiPhiThang'); BN.luu('chiphi', j, pv); veChiPhi(j); }
+  catch (e) { if (!c) $('c-thang').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; else if (epMoi) hbo(e.message, 'loi'); }
+}
+function veChiPhi(j) {
+  const loai = j.theoLoai || {};
+  const khoa = Object.keys(loai).sort((a, b) => loai[b] - loai[a]);
+  $('c-thang').innerHTML = '<div class="luoi" style="margin-bottom:12px">' +
+      o('Tổng chi', tien(j.tong)) + o('Doanh thu', tien(j.doanhThu)) +
+      o('Chênh lệch', tien(j.chenhLech), 'rong luc') + '</div>' +
+    '<div class="dong"><div class="than"><div class="ten">Chi phí trên doanh thu</div></div>' +
+    '<div class="phai">' + (j.tyLeChiPhi || 0) + '%</div></div>' +
+    (khoa.length ? khoa.map(k => '<div class="dong"><div class="than"><div class="ten">' + thoat(k) +
+      '</div></div><div class="phai">' + tien(loai[k]) + '</div></div>').join('')
+      : '<div class="trong">Tháng này chưa có khoản chi nào</div>');
 }
 
 /* ---------------- chấm công ---------------- */
-async function taiCong() {
+async function taiCong(epMoi) {
+  const pv = homNay(), c = BN.lay('cong', pv);
+  if (c) { veCongTT(c.d.tt); veCongThang(c.d.thang); }
+  if (!epMoi && c && !BN.canTai('cong', pv)) return;
   try {
-    const j = await api('trangThaiCong');
-    const mo = j.dangTrongCa;
-    $('g-trangthai').innerHTML = '<div class="the-tieude"><h2>Trạng thái</h2>' +
-      '<span class="the-nhan ' + (mo ? 'n-luc' : 'n-xam') + '">' + (mo ? 'Đang trong ca' : 'Ngoài ca') + '</span></div>' +
-      (mo ? '<div class="dong"><div class="than"><div class="ten">Vào ca lúc ' + thoat(j.ca.gioVao) + '</div>' +
-            '<div class="phu">Ngày ' + thoat(j.ca.ngay) + '</div></div></div>'
-          : '<div class="trong" style="padding:12px">Chụp ảnh rồi bấm check-in để bắt đầu ca</div>');
-    $('g-nut').innerHTML = mo
-      ? '<button class="nut-cong ra" onclick="bamCong(false)">Check-out<small>Kết thúc ca làm việc</small></button>'
-      : '<button class="nut-cong" onclick="bamCong(true)">Check-in<small>Bắt đầu ca làm việc</small></button>';
-  } catch (e) { $('g-trangthai').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
-  try {
-    const j = await api('congCuaToi');
-    const c = j.cong;
-    $('g-cong').innerHTML = c ? '<div class="luoi">' +
-        o('Số ca', so(c.soCa)) + o('Giờ thường', so(c.gioThuong)) +
-        o('Tăng ca đã duyệt', so(c.gioTangCa)) + o('Chờ duyệt', so(c.gioTangCaChuaDuyet)) + '</div>'
-      : '<div class="trong">Tháng ' + thoat(j.nhan) + ' chưa có ca nào</div>';
-  } catch (e) { $('g-cong').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
+    const kq = await goiNhieu([{ action: 'trangThaiCong' }, { action: 'congCuaToi' }]);
+    BN.luu('cong', { tt: kq[0], thang: kq[1] }, pv);
+    veCongTT(kq[0]); veCongThang(kq[1]);
+  } catch (e) {
+    if (c) { if (epMoi) hbo(e.message, 'loi'); return; }
+    veCongTT({ ok: false, loi: e.message }); veCongThang({ ok: false, loi: e.message });
+  }
+}
+function veCongTT(j) {
+  if (!j || !j.ok) { $('g-trangthai').innerHTML = '<div class="trong">' + thoat((j && j.loi) || 'Đang tải…') + '</div>'; return; }
+  const mo = j.dangTrongCa;
+  $('g-trangthai').innerHTML = '<div class="the-tieude"><h2>Trạng thái</h2>' +
+    '<span class="the-nhan ' + (mo ? 'n-luc' : 'n-xam') + '">' + (mo ? 'Đang trong ca' : 'Ngoài ca') + '</span></div>' +
+    (mo ? '<div class="dong"><div class="than"><div class="ten">Vào ca lúc ' + thoat(j.ca.gioVao) + '</div>' +
+          '<div class="phu">Ngày ' + thoat(j.ca.ngay) + '</div></div></div>'
+        : '<div class="trong" style="padding:12px">Chụp ảnh rồi bấm check-in để bắt đầu ca</div>');
+  $('g-nut').innerHTML = mo
+    ? '<button class="nut-cong ra" onclick="bamCong(false)">Check-out<small>Kết thúc ca làm việc</small></button>'
+    : '<button class="nut-cong" onclick="bamCong(true)">Check-in<small>Bắt đầu ca làm việc</small></button>';
+}
+function veCongThang(j) {
+  if (!j || !j.ok) { $('g-cong').innerHTML = '<div class="trong">' + thoat((j && j.loi) || 'Đang tải…') + '</div>'; return; }
+  const c = j.cong;
+  $('g-cong').innerHTML = c ? '<div class="luoi">' +
+      o('Số ca', so(c.soCa)) + o('Giờ thường', so(c.gioThuong)) +
+      o('Tăng ca đã duyệt', so(c.gioTangCa)) + o('Chờ duyệt', so(c.gioTangCaChuaDuyet)) + '</div>'
+    : '<div class="trong">Tháng ' + thoat(j.nhan) + ' chưa có ca nào</div>';
 }
 async function bamCong(vao) {
   if (!UD.anh.g) { hbo('Chụp ảnh trước khi chấm công', 'loi'); return; }
   try {
-    const j = await api(vao ? 'checkIn' : 'checkOut', { anh: UD.anh.g });
+    const action = vao ? 'checkIn' : 'checkOut', d = { anh: UD.anh.g };
+    const j = await api(action, d, { ghi: true, idYC: idYC(action, d) });
     hbo(j.thongBao || 'Đã ghi nhận', 'ok');
     xoaAnh('g', 'Chạm để chụp ảnh');
-    taiCong();
+    BN.cu('home');
+    taiCong(true);
   } catch (e) { hbo(e.message, 'loi'); }
 }
 
@@ -1173,15 +1397,25 @@ function nhomTT(ten) {
 const timVD = ma => UD.vd.filter(d => d.maDon === ma)[0];
 const dinhDangSdt = s => String(s || '').replace(/^(\d{4})(\d{3})(\d+)$/, '$1 $2 $3');
 
-async function taiVanDon() {
+async function taiVanDon(epMoi) {
+  const pv = String(UD.vdSoNgay), c = BN.lay('vd', pv);
+  if (c && UD.vdTai !== pv) { UD.vd = c.d.danhSach || []; UD.vdCfg = c.d.cauHinh || UD.vdCfg; UD.vdTai = pv; }
+  if (UD.vdTai === pv) { veVanDon(); veThanhChon(); }
+  if (!epMoi && c && !BN.canTai('vd', pv)) return;
   try {
     const j = await api('vdDanhSach', { soNgay: UD.vdSoNgay });
     UD.vd = j.danhSach || [];
     UD.vdCfg = j.cauHinh || UD.vdCfg;
+    UD.vdTai = pv;
     UD.vdChon = UD.vdChon.filter(ma => timVD(ma));
+    luuVanDonMay();
     veVanDon(); veThanhChon();
-  } catch (e) { $('v-ds').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>'; }
+  } catch (e) {
+    if (UD.vdTai !== pv) $('v-ds').innerHTML = '<div class="trong">' + thoat(e.message) + '</div>';
+    else if (epMoi) hbo(e.message, 'loi');
+  }
 }
+function luuVanDonMay() { BN.luu('vd', { danhSach: UD.vd, cauHinh: UD.vdCfg }, String(UD.vdSoNgay)); }
 function locVanDon(ma) { UD.vdLoc = ma; veVanDon(); }
 
 function dsVanDonDangLoc() {
@@ -1223,7 +1457,7 @@ function veVanDon() {
       '<div class="phu">' + thoat(x.thanhToan || '') + '</div></div></div>';
   }).join('') + cu;
 }
-function taiThemVanDon() { UD.vdSoNgay = UD.vdSoNgay < 180 ? 180 : 365; taiVanDon(); }
+function taiThemVanDon() { UD.vdSoNgay = UD.vdSoNgay < 180 ? 180 : 365; taiVanDon(true); }
 
 /* chọn nhiều đơn để cập nhật một lượt */
 function chamVanDon(ma) {
@@ -1356,12 +1590,16 @@ async function luuVanDon() {
     cn.ghiChu = ($('v-lydo').value || '').trim();
   }
   try {
-    const j = await api('vdCapNhat', { maDon: x.maDon, capNhat: cn });
-    const i = UD.vd.findIndex(d => d.maDon === x.maDon);
+    const d = { maDon: x.maDon, capNhat: cn };
+    const j = await api('vdCapNhat', d, { ghi: true, idYC: idYC('vdCapNhat', d) });
+    const i = UD.vd.findIndex(v => v.maDon === x.maDon);
     if (i > -1 && j.don) UD.vd[i] = j.don;
+    luuVanDonMay();
     dongTamNgay(); veVanDon();
     hbo('Đã cập nhật ' + x.maDon + (j.don ? ' · ' + j.don.tinhTrang : ''), 'ok');
     if (j.canhBao && j.canhBao.length) setTimeout(() => hbo(j.canhBao[0], 'loi'), 2500);
+    if (j.danhMuc) capNhatDanhMuc(j.danhMuc);
+    BN.cu('home'); BN.cu('don');
   } catch (e) { hbo(e.message, 'loi'); }
 }
 
@@ -1396,11 +1634,13 @@ async function luuNhieu() {
   if ($('v-tt').value) cn.thanhToan = $('v-tt').value;
   if (!Object.keys(cn).length) { hbo('Chọn ít nhất 1 mục cần đổi', 'loi'); return; }
   try {
-    const j = await api('vdCapNhatNhieu', { dsMaDon: UD.vdChon.slice(), capNhat: cn });
+    const d = { dsMaDon: UD.vdChon.slice(), capNhat: cn };
+    const j = await api('vdCapNhatNhieu', d, { ghi: true, idYC: idYC('vdCapNhatNhieu', d) });
     dongTamNgay(); batChonNhieu(false);
     hbo('Đã cập nhật ' + j.soDon + ' đơn', 'ok');
     if (j.loi && j.loi.length) setTimeout(() => hbo(j.loi.length + ' đơn không đổi được: ' + j.loi[0].loi, 'loi'), 2600);
-    await taiVanDon();
+    BN.cu('home'); BN.cu('don');
+    taiVanDon(true);
   } catch (e) { hbo(e.message, 'loi'); }
 }
 
@@ -1509,7 +1749,8 @@ function moCaiDat() {
       '<label class="o"><span>PIN mới (4–6 số)</span><input type="password" id="p-pin-moi" inputmode="numeric" maxlength="6"></label>' +
       '<button class="nut" onclick="doiPin()">Đổi PIN</button></div>' +
     '<div class="the"><div class="the-tieude"><h2>Hệ thống</h2></div>' +
-      '<div class="phu" style="word-break:break-all;margin-bottom:11px;color:var(--mo);font-size:12.5px">' + thoat(UD.api) + '</div>' +
+      '<div class="phu" style="word-break:break-all;margin-bottom:4px;color:var(--mo);font-size:12.5px">' + thoat(UD.api) + '</div>' +
+      '<div class="phu" style="margin-bottom:11px;color:var(--mo);font-size:12.5px">Phiên bản app ' + APP_PHIEN_BAN + '</div>' +
       '<div class="doi-nut">' +
         '<button class="nut vien" onclick="dongPhu();doiApi()">Đổi địa chỉ</button>' +
         '<button class="nut do" onclick="dongPhu();dangXuat()">Đăng xuất</button></div></div>');
@@ -1517,16 +1758,34 @@ function moCaiDat() {
 async function doiPin() {
   const cu = $('p-pin-cu').value.trim(), moi = $('p-pin-moi').value.trim();
   if (!/^\d{4,6}$/.test(moi)) { hbo('PIN mới phải là 4 đến 6 chữ số', 'loi'); return; }
-  try { await api('doiPin', { pinCu: cu, pinMoi: moi }); hbo('Đã đổi PIN', 'ok'); dongPhu(); }
+  try { await api('doiPin', { pinCu: cu, pinMoi: moi }, { ghi: true, idYC: idYC('doiPin', {}) }); hbo('Đã đổi PIN', 'ok'); dongPhu(); }
   catch (e) { hbo(e.message, 'loi'); }
 }
 
-/* ---------------- khởi chạy ---------------- */
+/* ---------------- khởi chạy ----------------
+   Có dữ liệu lưu trong máy: hiện app ngay, tải số mới chạy ngầm.
+   Chưa có (lần đầu trên máy này): hiện màn chờ trong lúc tải. */
 (async function () {
   if (!UD.api) { manCaiDat(); return; }
   if (!UD.token) { manLogin(); return; }
-  try { await khoiTao(); } catch (e) { manLogin(); }
+  const c = BN.lay('khoiTao');
+  if (c) { apDungKhoiTao(c.d); vaoApp(false); }
+  try { await khoiTao({ nen: !!c, khongHome: !!c }); }
+  catch (e) {
+    if (!UD.token) return;                                   // hết phiên → đã về màn đăng nhập
+    if (c) { hbo('Đang xem dữ liệu đã lưu · ' + e.message, 'loi'); return; }
+    if (e.mang) { $('loi-chu').textContent = e.message; $('man-loi').classList.remove('an'); return; }
+    manLogin(); hbo(e.message, 'loi');
+  }
 })();
+
+/* Quay lại app sau một lúc: tự cập nhật ngầm phần đã cũ */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !UD.token || !UD.me || $('man-app').classList.contains('an')) return;
+  if (BN.canTai('khoiTao')) { khoiTao({ nen: true }).catch(() => {}); return; }
+  const napTrang = { home: taiHome, don: taiDonHomNay, vandon: taiVanDon, kho: taiKho, chiphi: taiChiPhi, cong: taiCong }[UD.trang];
+  if (napTrang) napTrang(false);
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

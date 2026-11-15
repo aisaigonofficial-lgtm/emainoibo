@@ -1,8 +1,12 @@
-/* Êm Ái – Vận hành | Service Worker
+/* Êm Ái – Vận hành | Service Worker – bản 2 (15/11/2026)
    Chỉ cache phần vỏ giao diện. Mọi lời gọi API đều đi thẳng ra mạng,
-   không bao giờ cache, để số liệu kho và đơn hàng luôn là mới nhất. */
+   không bao giờ cache, để số liệu kho và đơn hàng luôn là mới nhất.
 
-const PHIEN_BAN = 'em-ai-v1';
+   Bản 2: mở app khi mạng yếu không phải chờ lâu. Lấy trang mới từ mạng,
+   quá 2,5 giây chưa xong thì mở ngay bản đã lưu (bản mới vẫn tải tiếp
+   để lần sau dùng). */
+
+const PHIEN_BAN = 'em-ai-v2';
 const VO = [
   './',
   './index.html',
@@ -10,6 +14,7 @@ const VO = [
   './icon-192.png',
   './icon-512.png'
 ];
+const CHO_MANG_MS = 2500;
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -36,17 +41,28 @@ self.addEventListener('fetch', e => {
   if (req.url.indexOf('script.google.com') > -1) return;
   if (req.url.indexOf('googleusercontent.com') > -1) return;
 
-  // Trang: ưu tiên mạng để luôn lấy bản mới, hỏng mạng thì dùng bản đã lưu
+  // Trang: ưu tiên bản mới từ mạng, mạng chậm quá 2,5 giây thì mở bản đã lưu
   if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then(res => {
-          const ban = res.clone();
-          caches.open(PHIEN_BAN).then(c => c.put('./index.html', ban));
-          return res;
-        })
-        .catch(() => caches.match('./index.html'))
-    );
+    const mang = fetch(req).then(res => {
+      if (res && res.ok) {
+        const ban = res.clone();
+        caches.open(PHIEN_BAN).then(c => c.put('./index.html', ban));
+      }
+      return res;
+    });
+    e.waitUntil(mang.catch(() => {}));
+    e.respondWith(new Promise(traLoi => {
+      let xong = false;
+      const tra = r => { if (!xong && r) { xong = true; traLoi(r); } };
+      const hen = setTimeout(() => {
+        caches.match('./index.html').then(tra);
+      }, CHO_MANG_MS);
+      mang.then(res => { clearTimeout(hen); tra(res); })
+        .catch(() => {
+          clearTimeout(hen);
+          caches.match('./index.html').then(da => tra(da || Response.error()));
+        });
+    }));
     return;
   }
 
